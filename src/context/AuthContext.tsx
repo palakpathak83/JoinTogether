@@ -22,6 +22,35 @@ interface AuthContextValue {
   setUserDirect: (user: User) => void;
 }
 
+function isHealthResponse(value: unknown): value is HealthResponse {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('service' in value) ||
+    typeof value.service !== 'string' ||
+    !('status' in value) ||
+    (value.status !== 'ok' && value.status !== 'degraded') ||
+    !('database' in value) ||
+    typeof value.database !== 'object' ||
+    value.database === null ||
+    !('timestamp' in value) ||
+    typeof value.timestamp !== 'string'
+  ) {
+    return false;
+  }
+
+  const database = value.database;
+  return (
+    'state' in database &&
+    typeof database.state === 'string' &&
+    ['connected', 'connecting', 'disconnected', 'unconfigured'].includes(database.state) &&
+    'readyState' in database &&
+    typeof database.readyState === 'number' &&
+    'error' in database &&
+    (database.error === null || typeof database.error === 'string')
+  );
+}
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -48,7 +77,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function bootstrap() {
       try {
-        const healthData = await apiRequest<HealthResponse>('/api/health', { skipAuth: true });
+        const healthData = await apiRequest<unknown>('/api/health', { skipAuth: true });
+        if (!isHealthResponse(healthData)) {
+          console.error(
+            'Health endpoint returned an unexpected response. Check that VITE_API_URL points to the API service.'
+          );
+          return;
+        }
         if (active) setHealth(healthData);
 
         if (healthData.database.state === 'connected') {
@@ -66,8 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // No valid refresh session cookie yet; user starts signed out
           }
         }
-      } catch {
-        // Server unreachable
+      } catch (error) {
+        console.error('Unable to fetch API health:', error);
       } finally {
         if (active) setLoading(false);
       }

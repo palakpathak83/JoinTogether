@@ -21,6 +21,35 @@ vi.stubGlobal(
 );
 
 describe('JoinTogether Frontend UI', () => {
+  it('keeps the landing page rendered when the health endpoint returns HTML', async () => {
+    vi.mocked(fetch).mockImplementationOnce(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => '<!doctype html><html><body>SPA fallback</body></html>',
+    }) as Response);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <LandingPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(
+      screen.getByRole('heading', {
+        name: /Find verified partners for shared orders, routes, teams, and events/i,
+      })
+    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Health endpoint returned an unexpected response. Check that VITE_API_URL points to the API service.'
+      );
+    });
+    errorSpy.mockRestore();
+  });
+
   it('renders the LandingPage with 3-zone header, headline, and all 4 matching categories', async () => {
     render(
       <MemoryRouter>
