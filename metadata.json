@@ -1,0 +1,6 @@
+{
+  "name": "JoinTogether",
+  "description": "Full-stack group matching platform for shared shopping, travel, hackathons, and events with explainable compatibility scoring, atomic group capacity, and real-time Socket.IO chat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
