@@ -49,16 +49,18 @@ JoinTogether is a full-stack group matching platform built with React, TypeScrip
   npm run lint && npm run build
   ```
 
-## Deployment (Render + Vercel + MongoDB Atlas)
+## Deployment (Render + MongoDB Atlas)
 
 ### 1. MongoDB Atlas
 Create a database user, allow network access for your app, and copy the cluster connection string into `MONGODB_URI`. The app uses `jointogether` by default; Atlas creates the database and collections when the app first writes data.
 
-### 2. Backend & Socket.IO on Render (`render.yaml`)
-- Connect your repository to Render using `render.yaml`.
-- Set `MONGODB_URI` and `CLIENT_URL` (your Vercel URL, e.g. `https://jointogether.vercel.app`) in Render Environment Variables.
+### 2. Deploy the full-stack app on Render (`render.yaml`)
+- Connect the repository to Render as a Blueprint and use `render.yaml`.
+- Set `MONGODB_URI` in the service environment. Render generates the JWT secrets; set `ADMIN_BOOTSTRAP_PASSCODE` only if you want to require one.
+- This service builds the Vite frontend and serves it, the Express API, and Socket.IO from the same origin. The site is available at the Render service URL after deployment; `VITE_API_URL` is not needed.
 - Render uses `/api/health` for health checks and runs `npm start`.
 
-### 3. Frontend on Vercel (`vercel.json`)
-- Deploy the Vite SPA to Vercel using `vercel.json`.
-- Set `VITE_API_URL` in Vercel Project Settings to your Render backend URL (e.g. `https://jointogether-api.onrender.com`).
+### Optional: host the frontend on Vercel
+- Deploy the Vite SPA using `vercel.json` only after the Render API is deployed and reachable.
+- Set `VITE_API_URL` in Vercel Project Settings to the Render service URL, then redeploy. Set `CLIENT_URL` on Render to the Vercel site origin.
+- Without `VITE_API_URL`, the browser sends API calls to Vercel, whose SPA rewrite serves `index.html`; registration then fails with HTTP 405. Use the single-origin Render deployment above if you do not have a separate API URL.
